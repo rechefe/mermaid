@@ -101,6 +101,7 @@ minlen
 Mstartx
 MULT
 Naur
+netlist
 NODIR
 nonterminal
 NSTR

@@ -166,6 +166,15 @@ export const db = {
   getData: (): LayoutData => {
     const config = getGlobalConfig();
     const look = config.look;
+    const schematicConfig = config.schematic;
+
+    // The default arrowhead marker is a fixed 8x8 user-space square. Below this size it starts
+    // to dominate a box's silhouette instead of sitting on its border, so nodes get a floor
+    // several times larger — `width`/`height` are a minimum drawRect grows from, not a fixed size.
+    const PORT_MIN_WIDTH = 56;
+    const PORT_MIN_HEIGHT = 32;
+    const INSTANCE_MIN_WIDTH = 72;
+    const INSTANCE_MIN_HEIGHT = 44;
 
     const nodes: Node[] = [
       ...[...model.ports.values()].map(
@@ -175,6 +184,8 @@ export const db = {
           shape: 'stadium',
           isGroup: false,
           padding: 8,
+          width: PORT_MIN_WIDTH,
+          height: PORT_MIN_HEIGHT,
           look,
           cssClasses: `default schematic-port schematic-port-${port.direction}`,
           cssStyles: [],
@@ -190,6 +201,8 @@ export const db = {
           shape: 'rect',
           isGroup: false,
           padding: 8,
+          width: INSTANCE_MIN_WIDTH,
+          height: INSTANCE_MIN_HEIGHT,
           look,
           cssClasses: `default schematic-instance schematic-instance-${instance.type}`,
           cssStyles: [],
@@ -205,6 +218,9 @@ export const db = {
       type: 'normal',
       arrowTypeEnd: 'arrow_point',
       thickness: 'normal',
+      // Wires read as right-angle runs, not smooth splines — the closest a netlist gets to
+      // looking hand-drafted rather than auto-laid-out.
+      curve: 'step',
       look,
       classes: 'schematic-net',
     }));
@@ -216,6 +232,10 @@ export const db = {
       direction: model.direction,
       markers: ['point'],
       diagramId: 'schematic',
+      // Read directly off data4Layout by the dagre layout algorithm, ahead of config.flowchart's
+      // spacing — see rendering-util/layout-algorithms/dagre/index.js.
+      nodeSpacing: schematicConfig?.nodeSpacing,
+      rankSpacing: schematicConfig?.rankSpacing,
     };
   },
 };
