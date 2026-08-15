@@ -33,6 +33,7 @@ import venn from '../diagrams/venn/vennDetector.js';
 import { registerLazyLoadedDiagrams } from './detectType.js';
 import { registerDiagram } from './diagramAPI.js';
 import { treemap } from '../diagrams/treemap/detector.js';
+import { schematic } from '../diagrams/schematic/schematicDetector.js';
 import { usecase } from '../diagrams/usecase/usecaseDetector.js';
 import wardley from '../diagrams/wardley/wardleyDetector.js';
 import { cynefin } from '../diagrams/cynefin/cynefinDetector.js';
@@ -125,6 +126,7 @@ export const addDiagrams = () => {
     venn,
     wardley,
     cynefin,
-    usecase
+    usecase,
+    schematic
   );
 };

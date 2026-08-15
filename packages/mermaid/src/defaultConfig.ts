@@ -278,6 +278,9 @@ const config: RequiredDeep<MermaidConfig> = {
   radar: {
     ...defaultConfigJson.radar,
   },
+  schematic: {
+    ...defaultConfigJson.schematic,
+  },
   usecase: {
     ...defaultConfigJson.usecase,
   },

@@ -356,6 +356,8 @@ properties:
     $ref: '#/$defs/TreeViewDiagramConfig'
   radar:
     $ref: '#/$defs/RadarDiagramConfig'
+  schematic:
+    $ref: '#/$defs/SchematicDiagramConfig'
   usecase:
     $ref: '#/$defs/UsecaseDiagramConfig'
   venn:
@@ -2664,6 +2666,31 @@ $defs: # JSON Schema definition (maybe we should move these to a separate file)
         minimum: 0
         maximum: 1
         default: 0.17
+
+  SchematicDiagramConfig:
+    title: Schematic Diagram Config
+    allOf: [{ $ref: '#/$defs/BaseDiagramConfig' }]
+    description: The object containing configurations specific for schematic diagrams.
+    type: object
+    unevaluatedProperties: false
+    required:
+      - useMaxWidth
+    properties:
+      diagramPadding:
+        description: Padding between the diagram content and its bounding box.
+        type: number
+        minimum: 0
+        default: 8
+      nodeSpacing:
+        description: Spacing between blocks that sit side by side in the same rank.
+        type: number
+        minimum: 0
+        default: 50
+      rankSpacing:
+        description: Spacing between successive ranks of blocks along the signal direction.
+        type: number
+        minimum: 0
+        default: 60
 
   UsecaseDiagramConfig:
     title: Usecase Diagram Config

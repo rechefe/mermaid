@@ -207,6 +207,13 @@ union A, B`,
     Login("Sign in")
     User --> Login`,
 
+  schematic: `schematic-beta
+    in a
+    out y
+    buf b1
+    a --> b1
+    b1 --> y`,
+
   eventmodeling: `eventmodeling
     tf 01 evt Start
     tf 02 evt End

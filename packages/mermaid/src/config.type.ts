@@ -256,6 +256,7 @@ export interface MermaidConfig {
   eventmodeling?: EventModelingDiagramConfig;
   treeView?: TreeViewDiagramConfig;
   radar?: RadarDiagramConfig;
+  schematic?: SchematicDiagramConfig;
   usecase?: UsecaseDiagramConfig;
   venn?: VennDiagramConfig;
   'wardley-beta'?: WardleyDiagramConfig;
@@ -1925,6 +1926,26 @@ export interface RadarDiagramConfig extends BaseDiagramConfig {
    * The tension factor for the Catmull-Rom spline conversion to cubic Bézier curves.
    */
   curveTension?: number;
+}
+/**
+ * The object containing configurations specific for schematic diagrams.
+ *
+ * This interface was referenced by `MermaidConfig`'s JSON-Schema
+ * via the `definition` "SchematicDiagramConfig".
+ */
+export interface SchematicDiagramConfig extends BaseDiagramConfig {
+  /**
+   * Padding between the diagram content and its bounding box.
+   */
+  diagramPadding?: number;
+  /**
+   * Spacing between blocks that sit side by side in the same rank.
+   */
+  nodeSpacing?: number;
+  /**
+   * Spacing between successive ranks of blocks along the signal direction.
+   */
+  rankSpacing?: number;
 }
 /**
  * The object containing configurations specific for usecase diagrams.
