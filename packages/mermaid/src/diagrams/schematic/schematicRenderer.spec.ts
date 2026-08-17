@@ -1,6 +1,10 @@
-import { describe, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { addDiagrams } from '../../diagram-api/diagram-orchestration.js';
 import mermaidAPI from '../../mermaidAPI.js';
+import {
+  getRegisteredLayoutAlgorithm,
+  registerLayoutLoaders,
+} from '../../rendering-util/render.js';
 import { jsdomIt } from '../../tests/util.js';
 
 addDiagrams();
@@ -45,5 +49,25 @@ describe('schematic renderer', () => {
 
     expect(svg).toContain('AND gate');
     expect(svg).toContain('Two inputs feeding one AND gate');
+  });
+
+  describe('layout algorithm selection', () => {
+    // schematicRenderer.ts always requests 'elk' first, falling back to dagre — this is the
+    // exact registry mechanism it depends on. Pulling in the real @mermaid-js/layout-elk
+    // package here would make packages/mermaid depend on the very package that depends on it
+    // (it imports `mermaid`), which broke the separate types-generation build; a minimal fake
+    // loader that only satisfies the registry's shape tests the same contract without that.
+    // Order matters: the registry in rendering-util/render.js only grows for the life of the
+    // module, so the "nothing registered yet" case has to run before anything registers 'elk'.
+    it('falls back to dagre when nothing has registered an "elk" layout', () => {
+      expect(getRegisteredLayoutAlgorithm('elk', { fallback: 'dagre' })).toBe('dagre');
+    });
+
+    it('prefers elk once a layout named "elk" is registered', () => {
+      const fakeElkLayout = { render: () => Promise.resolve() };
+      registerLayoutLoaders([{ name: 'elk', loader: () => Promise.resolve(fakeElkLayout) }]);
+
+      expect(getRegisteredLayoutAlgorithm('elk', { fallback: 'dagre' })).toBe('elk');
+    });
   });
 });

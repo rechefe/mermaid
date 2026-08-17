@@ -9,12 +9,29 @@ import type { SchematicDB } from './schematicDb.js';
 
 const draw: DrawDefinition = async (_text, id, _version, diag) => {
   log.info('Drawing schematic diagram', id);
-  const { layout, securityLevel } = getConfig();
+  const { securityLevel } = getConfig();
 
   const schematicDb = diag.db as SchematicDB;
   const data4Layout = schematicDb.getData();
-  data4Layout.layoutAlgorithm = getRegisteredLayoutAlgorithm(layout);
+  // A netlist needs obstacle-aware orthogonal routing, not dagre's spline waypoints, so this
+  // always prefers elk over whatever the document's global `layout` config says — that setting
+  // is meant for the user's other diagrams, not this one. Falls back to dagre (with a console
+  // warning from getRegisteredLayoutAlgorithm) if the consuming app hasn't registered
+  // @mermaid-js/layout-elk; detecting that ahead of time isn't possible; a per-diagram config
+  // mutation during detection was tried and doesn't work — mermaidAPI.render() snapshots
+  // getConfig() before running detection, so a detector's config.layout mutation lands on a
+  // clone that's already discarded by the time this renderer runs.
+  data4Layout.layoutAlgorithm = getRegisteredLayoutAlgorithm('elk', { fallback: 'dagre' });
   data4Layout.diagramId = id;
+
+  // ELK's own layered-algorithm default already routes edges as obstacle-aware right angles
+  // (verified directly against elkjs), so its waypoints just need straight segments between
+  // them. The dagre fallback has no such awareness, so 'step' is still what turns its smooth
+  // spline waypoints into a right-angle read — see the schematicDb net-thickness/routing fix.
+  const usingElk = data4Layout.layoutAlgorithm === 'elk';
+  for (const edge of data4Layout.edges) {
+    edge.curve = usingElk ? 'linear' : 'step';
+  }
 
   const svg = getDiagramElement(id, securityLevel);
   await render(data4Layout, svg);

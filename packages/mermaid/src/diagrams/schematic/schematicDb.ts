@@ -218,9 +218,9 @@ export const db = {
       type: 'normal',
       arrowTypeEnd: 'arrow_point',
       thickness: 'normal',
-      // Wires read as right-angle runs, not smooth splines — the closest a netlist gets to
-      // looking hand-drafted rather than auto-laid-out.
-      curve: 'step',
+      // Wires read as right-angle runs, not smooth splines. schematicRenderer.ts picks the
+      // actual curve type once it knows which layout algorithm resolved — ELK's own waypoints
+      // are already orthogonal and obstacle-aware, dagre's aren't.
       look,
       classes: 'schematic-net',
     }));
