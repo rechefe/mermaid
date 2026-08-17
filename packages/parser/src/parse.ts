@@ -16,8 +16,17 @@ import type {
   TreeView,
   Wardley,
   Cynefin,
+  Schematic,
 } from './language/index.js';
 
+// NOTE: `Schematic` is intentionally NOT part of this union. §3 of the
+// schematic-beta spec gives a self-contained grammar that (unlike every
+// other mermaid grammar) does not import `common.langium`, so it has no
+// `title` / `accTitle` / `accDescr` rules. `populateCommonDb` — used by every
+// other diagram's parser — assumes all `DiagramAST` members carry those
+// fields, so folding `Schematic` into this union would break that shared
+// contract. `Schematic` is still fully parseable via the dedicated
+// `parse('schematic', text)` overload below.
 export type DiagramAST =
   | Info
   | Packet
@@ -112,6 +121,11 @@ const initializers = {
     const parser = createCynefinServices().Cynefin.parser.LangiumParser;
     parsers.cynefin = parser;
   },
+  schematic: async () => {
+    const { createSchematicServices } = await import('./language/schematic/index.js');
+    const parser = createSchematicServices().Schematic.parser.LangiumParser;
+    parsers.schematic = parser;
+  },
 } as const;
 
 export async function parse(diagramType: 'info', text: string): Promise<Info>;
@@ -129,6 +143,7 @@ export async function parse(diagramType: 'railroadPeg', text: string): Promise<R
 export async function parse(diagramType: 'treemap', text: string): Promise<Treemap>;
 export async function parse(diagramType: 'wardley', text: string): Promise<Wardley>;
 export async function parse(diagramType: 'cynefin', text: string): Promise<Cynefin>;
+export async function parse(diagramType: 'schematic', text: string): Promise<Schematic>;
 
 export async function parse<T extends DiagramAST>(
   diagramType: keyof typeof initializers,

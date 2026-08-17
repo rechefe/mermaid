@@ -362,6 +362,8 @@ properties:
     $ref: '#/$defs/VennDiagramConfig'
   wardley-beta:
     $ref: '#/$defs/WardleyDiagramConfig'
+  schematic-beta:
+    $ref: '#/$defs/SchematicDiagramConfig'
   cynefin:
     $ref: '#/$defs/CynefinDiagramConfig'
   railroad:
@@ -2965,6 +2967,13 @@ $defs: # JSON Schema definition (maybe we should move these to a separate file)
         type: number
         minimum: 0
         default: 5
+
+  SchematicDiagramConfig:
+    title: Schematic Diagram Config
+    allOf: [{ $ref: '#/$defs/BaseDiagramConfig' }]
+    description: The object containing configurations specific for schematic diagrams.
+    type: object
+    unevaluatedProperties: false
 
   FontCalculator:
     title: Font Calculator

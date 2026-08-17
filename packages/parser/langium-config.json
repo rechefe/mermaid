@@ -75,6 +75,12 @@
       "id": "railroadPeg",
       "grammar": "src/language/railroad-peg/railroad-peg.langium",
       "fileExtensions": [".mmd", ".mermaid"]
+    },
+    {
+      "id": "schematic",
+      "grammar": "src/language/schematic/schematic.langium",
+      "fileExtensions": [".mmd", ".mermaid"],
+      "chevrotainParserConfig": { "maxLookahead": 2 }
     }
   ],
   "mode": "production",

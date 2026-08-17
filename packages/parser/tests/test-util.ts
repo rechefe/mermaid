@@ -17,6 +17,8 @@ import type {
   EventModelingServices,
   TreeView,
   TreeViewServices,
+  Schematic,
+  SchematicServices,
 } from '../src/language/index.js';
 import {
   createArchitectureServices,
@@ -27,6 +29,7 @@ import {
   createGitGraphServices,
   createEventModelingServices,
   createTreeViewServices,
+  createSchematicServices,
 } from '../src/language/index.js';
 
 const consoleMock = vi.spyOn(console, 'log').mockImplementation(() => undefined);
@@ -133,3 +136,14 @@ export function createTreeViewTestServices() {
   return { services: treeViewServices, parse };
 }
 export const treeViewParse = createTreeViewTestServices().parse;
+
+const schematicServices: SchematicServices = createSchematicServices().Schematic;
+const schematicParser: LangiumParser = schematicServices.parser.LangiumParser;
+export function createSchematicTestServices() {
+  const parse = (input: string) => {
+    return schematicParser.parse<Schematic>(input);
+  };
+
+  return { services: schematicServices, parse };
+}
+export const schematicParse = createSchematicTestServices().parse;

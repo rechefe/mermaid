@@ -202,6 +202,16 @@ union A, B`,
     chaotic
       "Page on-call"`,
 
+  schematic: `schematic-beta
+    in a
+    in b
+    out y
+
+    and g1
+    a  --> g1
+    b  --> g1
+    g1 --> y`,
+
   usecase: `usecase-beta
     actor User
     Login("Sign in")

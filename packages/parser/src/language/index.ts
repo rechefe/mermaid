@@ -9,6 +9,32 @@ export {
   GitGraph,
   Radar,
   Railroad,
+  Schematic,
+  SchGroup,
+  SchLink,
+  SchDirection,
+  SchStatement,
+  ModuleDef,
+  ModuleMember,
+  Instance,
+  Connection,
+  PortDecl,
+  Side,
+  Width,
+  Endpoint,
+  isSchematic,
+  isSchGroup,
+  isSchLink,
+  isSchDirection,
+  isModuleDef,
+  isInstance,
+  isConnection,
+  isPortDecl,
+  isSide,
+  isWidth,
+  isEndpoint,
+  isSchStatement,
+  isModuleMember,
   RailroadChoiceExpr,
   RailroadExpression,
   RailroadNonTerminalExpr,
@@ -112,6 +138,7 @@ export {
   RailroadEbnfGrammarGeneratedModule as RailroadEbnfGeneratedModule,
   RailroadAbnfGrammarGeneratedModule as RailroadAbnfGeneratedModule,
   RailroadPegGrammarGeneratedModule as RailroadPegGeneratedModule,
+  SchematicGrammarGeneratedModule as SchematicGeneratedModule,
   TreemapGrammarGeneratedModule as TreemapGeneratedModule,
   TreeViewGrammarGeneratedModule as TreeViewGeneratedModule,
   WardleyGrammarGeneratedModule as WardleyGeneratedModule,
@@ -127,6 +154,7 @@ export * from './treeView/index.js';
 export * from './architecture/index.js';
 export * from './eventmodeling/index.js';
 export * from './radar/index.js';
+export * from './schematic/index.js';
 export * from './railroad/index.js';
 export * from './railroad-ebnf/index.js';
 export * from './railroad-abnf/index.js';

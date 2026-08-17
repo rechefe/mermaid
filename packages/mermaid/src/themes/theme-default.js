@@ -367,6 +367,16 @@ class Theme {
       annotationFill: this.wardley?.annotationFill || this.background,
     };
 
+    /* schematic */
+    this.schematicBodyFill = this.schematicBodyFill || '#ffffff';
+    this.schematicBodyStroke = this.schematicBodyStroke || '#24292f';
+    this.schematicTitleColor = this.schematicTitleColor || '#1f2328';
+    this.schematicLabelColor = this.schematicLabelColor || '#57606a';
+    this.schematicNet = this.schematicNet || '#24292f';
+    this.schematicBus = this.schematicBus || '#0969da';
+    this.schematicGroupFill = this.schematicGroupFill || '#e3eefb';
+    this.schematicGroupText = this.schematicGroupText || '#0969da';
+
     /* xychart */
     this.xyChart = {
       backgroundColor: this.xyChart?.backgroundColor || this.background,

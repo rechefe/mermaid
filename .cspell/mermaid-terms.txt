@@ -19,6 +19,7 @@ gantt
 gitgraph
 gzipped
 handDrawn
+inout
 jsobj
 kanban
 marginx
@@ -28,10 +29,12 @@ mermaidchart
 mermaidjs
 mindmap
 mindmaps
+modports
 mrtree
 multigraph
 nodesep
 NOTEGROUP
+parseable
 Pinterest
 procs
 rankdir
@@ -44,7 +47,11 @@ siebling
 statediagram
 Structurizr
 substate
+tdata
+tready
 treeview
+tvalid
+undriven
 unfixable
 Unmodelled
 Viewbox
@@ -52,4 +59,5 @@ viewports
 visio
 vitepress
 xlink
+xnor
 xychart

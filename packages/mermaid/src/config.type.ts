@@ -259,6 +259,7 @@ export interface MermaidConfig {
   usecase?: UsecaseDiagramConfig;
   venn?: VennDiagramConfig;
   'wardley-beta'?: WardleyDiagramConfig;
+  'schematic-beta'?: SchematicDiagramConfig;
   cynefin?: CynefinDiagramConfig;
   railroad?: RailroadDiagramConfig;
   dompurifyConfig?: DOMPurifyConfiguration;
@@ -2044,6 +2045,13 @@ export interface WardleyDiagramConfig extends BaseDiagramConfig {
    */
   showGrid?: boolean;
 }
+/**
+ * The object containing configurations specific for schematic diagrams.
+ *
+ * This interface was referenced by `MermaidConfig`'s JSON-Schema
+ * via the `definition` "SchematicDiagramConfig".
+ */
+export interface SchematicDiagramConfig extends BaseDiagramConfig {}
 /**
  * Configuration for Cynefin framework diagrams.
  *
