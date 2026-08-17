@@ -10,6 +10,7 @@ import {
   computeGlyphNodeGeometry,
   computeGroupBand,
   computeTerminalGeometry,
+  measureText,
   portDisplayName,
 } from './geometry.js';
 import { glyphBodyPath, invertingBubble, xorBackArcPath } from './glyphs.js';
@@ -219,23 +220,28 @@ function drawTerminalNode(g: SVGGroup, node: NodeModel): void {
   const busClass = port.width > 1 ? 'sch-bus' : 'sch-net';
   const cx = node.width / 2;
   const cy = node.height / 2;
+  // The lead line must stop at the label's edge, not run underneath it —
+  // measure the label so the two never overlap.
+  const labelMetrics = measureText(node.label, G.PORT_LABEL_SIZE, FONT_MONO);
+  const labelW = Math.min(labelMetrics.w, node.width);
+  const labelH = Math.min(labelMetrics.h, node.height);
   let lead: { x1: number; y1: number; x2: number; y2: number };
   let label: { x: number; y: number; anchor: string };
   switch (port.side) {
     case 'EAST':
-      lead = { x1: 0, y1: cy, x2: node.width, y2: cy };
+      lead = { x1: labelW, y1: cy, x2: node.width, y2: cy };
       label = { x: 0, y: cy, anchor: 'start' };
       break;
     case 'WEST':
-      lead = { x1: node.width, y1: cy, x2: 0, y2: cy };
+      lead = { x1: node.width - labelW, y1: cy, x2: 0, y2: cy };
       label = { x: node.width, y: cy, anchor: 'end' };
       break;
     case 'SOUTH':
-      lead = { x1: cx, y1: 0, x2: cx, y2: node.height };
+      lead = { x1: cx, y1: labelH, x2: cx, y2: node.height };
       label = { x: cx, y: 0, anchor: 'middle' };
       break;
     case 'NORTH':
-      lead = { x1: cx, y1: node.height, x2: cx, y2: 0 };
+      lead = { x1: cx, y1: node.height - labelH, x2: cx, y2: 0 };
       label = { x: cx, y: node.height, anchor: 'middle' };
       break;
   }
