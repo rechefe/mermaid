@@ -45,16 +45,18 @@ export const Out = createKeyword('OUT', 'out');
 export const Inout = createKeyword('INOUT', 'inout');
 
 /**
- * Reserved ahead of use. Phases 2 and 3 give `module`/`end`/`bus` meaning; reserving them now
- * means a phase 1 diagram that uses one as a name fails today rather than silently changing
- * meaning when those phases land.
+ * `bus` is reserved ahead of use — phase 3 gives it meaning. Reserving it now means a phase 1/2
+ * diagram that uses it as a name fails today rather than silently changing meaning later.
  */
 export const Module = createKeyword('MODULE', 'module');
 export const End = createKeyword('END', 'end');
+export const Group = createKeyword('GROUP', 'group');
 export const Bus = createKeyword('BUS', 'bus');
 
 export const Arrow = createToken({ name: 'ARROW', pattern: /-->/ });
 export const Dot = createToken({ name: 'DOT', pattern: /\./ });
+export const Colon = createToken({ name: 'COLON', pattern: /:/ });
+export const At = createToken({ name: 'AT', pattern: /@/ });
 
 export const WhiteSpace = createToken({
   name: 'HWS',
@@ -110,8 +112,11 @@ export const schematicTokens: TokenType[] = [
   Out,
   Module,
   End,
+  Group,
   Bus,
   Arrow,
   Dot,
+  Colon,
+  At,
   Identifier,
 ];

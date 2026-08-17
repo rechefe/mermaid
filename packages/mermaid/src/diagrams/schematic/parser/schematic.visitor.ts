@@ -1,6 +1,11 @@
 import type { CstNode, IToken } from 'chevrotain';
 import { db } from '../schematicDb.js';
-import type { PortDirection, SchematicEndpoint } from '../schematicTypes.js';
+import type {
+  PortDirection,
+  RawModulePort,
+  RawPortGroup,
+  SchematicEndpoint,
+} from '../schematicTypes.js';
 import { schematicParser } from './schematic.parser.js';
 
 type Ctx = Record<string, (CstNode | IToken)[] | undefined>;
@@ -9,6 +14,7 @@ interface PortDeclaration {
   kind: 'port';
   id: string;
   direction: PortDirection;
+  portKind?: string;
 }
 interface InstanceDeclaration {
   kind: 'instance';
@@ -20,7 +26,21 @@ interface NetDeclaration {
   source: SchematicEndpoint;
   target: SchematicEndpoint;
 }
-type Declaration = PortDeclaration | InstanceDeclaration | NetDeclaration | undefined;
+interface ModuleDeclaration {
+  kind: 'module';
+  name: string;
+  ports: RawModulePort[];
+  groups: RawPortGroup[];
+}
+type Declaration =
+  | PortDeclaration
+  | InstanceDeclaration
+  | NetDeclaration
+  | ModuleDeclaration
+  | undefined;
+
+/** A bare port line or a whole group block, as found directly inside a `module ... end` body. */
+type ModuleMember = { kind: 'port'; port: RawModulePort } | { kind: 'group'; group: RawPortGroup };
 
 const BaseVisitor = schematicParser.getBaseCstVisitorConstructor();
 
@@ -52,9 +72,15 @@ class SchematicVisitor extends BaseVisitor {
     throw new Error(`Unexpected schematic statement: expected one of ${names.join(', ')}.`);
   }
 
+  private direction(ctx: Ctx): PortDirection {
+    const found = (['IN', 'OUT', 'INOUT'] as const).find((name) => this.tokens(ctx, name).length);
+    return found!.toLowerCase() as PortDirection;
+  }
+
   /**
-   * Declarations are applied in dependency order — ports, then instances, then nets — rather
-   * than in source order, so a net may reference a name declared further down the diagram.
+   * Declarations are applied in dependency order — modules, then ports, then instances, then
+   * nets — rather than in source order, so an instance may reference a module declared further
+   * down the diagram, and a net may reference a name declared further down still.
    */
   start(ctx: Ctx): void {
     const declarations = this.nodes(ctx, 'line')
@@ -62,8 +88,13 @@ class SchematicVisitor extends BaseVisitor {
       .filter((declaration): declaration is NonNullable<Declaration> => declaration !== undefined);
 
     for (const declaration of declarations) {
+      if (declaration.kind === 'module') {
+        db.addModule(declaration.name, declaration.ports, declaration.groups);
+      }
+    }
+    for (const declaration of declarations) {
       if (declaration.kind === 'port') {
-        db.addPort(declaration.id, declaration.direction);
+        db.addPort(declaration.id, declaration.direction, declaration.portKind);
       }
     }
     for (const declaration of declarations) {
@@ -89,6 +120,7 @@ class SchematicVisitor extends BaseVisitor {
         'accTitleStatement',
         'accDescrStatement',
         'directionStatement',
+        'moduleStatement',
         'portStatement',
         'instanceStatement',
         'connectionStatement'
@@ -130,13 +162,12 @@ class SchematicVisitor extends BaseVisitor {
   }
 
   portStatement(ctx: Ctx): PortDeclaration {
-    const direction = (['IN', 'OUT', 'INOUT'] as const).find(
-      (name) => this.tokens(ctx, name).length > 0
-    );
+    const kindNode = this.nodes(ctx, 'kindClause')[0];
     return {
       kind: 'port',
       id: this.tokens(ctx, 'IDENTIFIER')[0].image,
-      direction: direction!.toLowerCase() as PortDirection,
+      direction: this.direction(ctx),
+      portKind: kindNode ? (this.visit(kindNode) as string) : undefined,
     };
   }
 
@@ -155,6 +186,79 @@ class SchematicVisitor extends BaseVisitor {
   endpoint(ctx: Ctx): SchematicEndpoint {
     const [id, port] = this.tokens(ctx, 'IDENTIFIER');
     return port ? { id: id.image, port: port.image } : { id: id.image };
+  }
+
+  moduleStatement(ctx: Ctx): ModuleDeclaration {
+    const name = this.tokens(ctx, 'IDENTIFIER')[0].image;
+    const ports: RawModulePort[] = [];
+    const groups: RawPortGroup[] = [];
+
+    for (const memberNode of this.nodes(ctx, 'moduleLine')) {
+      const member = this.visit(memberNode) as ModuleMember | undefined;
+      if (!member) {
+        continue;
+      }
+      if (member.kind === 'port') {
+        ports.push(member.port);
+      } else {
+        groups.push(member.group);
+        ports.push(...member.group.ports.map((port) => ({ ...port, group: member.group.name })));
+      }
+    }
+
+    return { kind: 'module', name, ports, groups };
+  }
+
+  moduleLine(ctx: Ctx): ModuleMember | undefined {
+    const node = this.nodes(ctx, 'blankLine')[0] ?? this.nodes(ctx, 'commentLine')[0];
+    if (node) {
+      return undefined;
+    }
+    const groupNode = this.nodes(ctx, 'groupStatement')[0];
+    if (groupNode) {
+      return { kind: 'group', group: this.visit(groupNode) as RawPortGroup };
+    }
+    return {
+      kind: 'port',
+      port: this.visit(this.firstNode(ctx, 'modulePortStatement')) as RawModulePort,
+    };
+  }
+
+  groupStatement(ctx: Ctx): RawPortGroup {
+    const sideNode = this.nodes(ctx, 'sideClause')[0];
+    return {
+      name: this.tokens(ctx, 'IDENTIFIER')[0].image,
+      side: sideNode ? (this.visit(sideNode) as string) : undefined,
+      ports: this.nodes(ctx, 'groupLine')
+        .map((line) => this.visit(line) as RawModulePort | undefined)
+        .filter((port): port is RawModulePort => port !== undefined),
+    };
+  }
+
+  groupLine(ctx: Ctx): RawModulePort | undefined {
+    const node = this.nodes(ctx, 'blankLine')[0] ?? this.nodes(ctx, 'commentLine')[0];
+    return node
+      ? undefined
+      : (this.visit(this.firstNode(ctx, 'modulePortStatement')) as RawModulePort);
+  }
+
+  modulePortStatement(ctx: Ctx): RawModulePort {
+    const kindNode = this.nodes(ctx, 'kindClause')[0];
+    const sideNode = this.nodes(ctx, 'sideClause')[0];
+    return {
+      id: this.tokens(ctx, 'IDENTIFIER')[0].image,
+      direction: this.direction(ctx),
+      kind: kindNode ? (this.visit(kindNode) as string) : undefined,
+      side: sideNode ? (this.visit(sideNode) as string) : undefined,
+    };
+  }
+
+  kindClause(ctx: Ctx): string {
+    return this.tokens(ctx, 'IDENTIFIER')[0].image;
+  }
+
+  sideClause(ctx: Ctx): string {
+    return this.tokens(ctx, 'IDENTIFIER')[0].image;
   }
 }
 

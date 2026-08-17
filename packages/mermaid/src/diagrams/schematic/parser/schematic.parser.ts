@@ -5,12 +5,17 @@ import {
   AccDescrLine,
   AccTitleLine,
   Arrow,
+  At,
+  Colon,
   Comment,
   Direction,
   Dot,
+  End,
+  Group,
   Identifier,
   In,
   Inout,
+  Module,
   NewLine,
   Out,
   SchematicBeta,
@@ -31,6 +36,13 @@ class SchematicParser extends CstParser {
   declare instanceStatement: () => CstNode;
   declare connectionStatement: () => CstNode;
   declare endpoint: () => CstNode;
+  declare moduleStatement: () => CstNode;
+  declare moduleLine: () => CstNode;
+  declare groupStatement: () => CstNode;
+  declare groupLine: () => CstNode;
+  declare modulePortStatement: () => CstNode;
+  declare kindClause: () => CstNode;
+  declare sideClause: () => CstNode;
 
   constructor() {
     super(schematicTokens);
@@ -54,6 +66,7 @@ class SchematicParser extends CstParser {
         { ALT: () => this.SUBRULE(this.accTitleStatement) },
         { ALT: () => this.SUBRULE(this.accDescrStatement) },
         { ALT: () => this.SUBRULE(this.directionStatement) },
+        { ALT: () => this.SUBRULE(this.moduleStatement) },
         { ALT: () => this.SUBRULE(this.portStatement) },
         {
           // `and g1` and `a --> g1` both open with a name; the token after it decides which.
@@ -103,6 +116,7 @@ class SchematicParser extends CstParser {
         { ALT: () => this.CONSUME(Inout) },
       ]);
       this.CONSUME(Identifier);
+      this.OPTION(() => this.SUBRULE(this.kindClause));
       this.SUBRULE(this.lineEnd);
     });
 
@@ -125,6 +139,64 @@ class SchematicParser extends CstParser {
         this.CONSUME(Dot);
         this.CONSUME2(Identifier);
       });
+    });
+
+    this.RULE('moduleStatement', () => {
+      this.CONSUME(Module);
+      this.CONSUME(Identifier);
+      this.SUBRULE(this.lineEnd);
+      this.MANY(() => this.SUBRULE(this.moduleLine));
+      this.CONSUME(End);
+      this.SUBRULE2(this.lineEnd);
+    });
+
+    this.RULE('moduleLine', () => {
+      this.OR([
+        { ALT: () => this.SUBRULE(this.blankLine) },
+        { ALT: () => this.SUBRULE(this.commentLine) },
+        { ALT: () => this.SUBRULE(this.groupStatement) },
+        { ALT: () => this.SUBRULE(this.modulePortStatement) },
+      ]);
+    });
+
+    this.RULE('groupStatement', () => {
+      this.CONSUME(Group);
+      this.CONSUME(Identifier);
+      this.OPTION(() => this.SUBRULE(this.sideClause));
+      this.SUBRULE(this.lineEnd);
+      this.MANY(() => this.SUBRULE(this.groupLine));
+      this.CONSUME(End);
+      this.SUBRULE2(this.lineEnd);
+    });
+
+    this.RULE('groupLine', () => {
+      this.OR([
+        { ALT: () => this.SUBRULE(this.blankLine) },
+        { ALT: () => this.SUBRULE(this.commentLine) },
+        { ALT: () => this.SUBRULE(this.modulePortStatement) },
+      ]);
+    });
+
+    this.RULE('modulePortStatement', () => {
+      this.OR([
+        { ALT: () => this.CONSUME(In) },
+        { ALT: () => this.CONSUME(Out) },
+        { ALT: () => this.CONSUME(Inout) },
+      ]);
+      this.CONSUME(Identifier);
+      this.OPTION(() => this.SUBRULE(this.kindClause));
+      this.OPTION2(() => this.SUBRULE(this.sideClause));
+      this.SUBRULE(this.lineEnd);
+    });
+
+    this.RULE('kindClause', () => {
+      this.CONSUME(Colon);
+      this.CONSUME(Identifier);
+    });
+
+    this.RULE('sideClause', () => {
+      this.CONSUME(At);
+      this.CONSUME(Identifier);
     });
 
     this.performSelfAnalysis();

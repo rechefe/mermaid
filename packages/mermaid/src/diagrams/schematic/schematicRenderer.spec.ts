@@ -51,6 +51,33 @@ describe('schematic renderer', () => {
     expect(svg).toContain('Two inputs feeding one AND gate');
   });
 
+  jsdomIt('renders a module instance like any other box', async () => {
+    // Placed ahead of the elk-registration tests below: schematicRenderer.ts always prefers
+    // 'elk' once something registers it, and the fake loader those tests register is a no-op.
+    const { svg } = await mermaidAPI.render(
+      'schematic-module-render',
+      `schematic-beta
+  module ALU
+    in a
+    in b
+    out y
+  end
+  in x
+  in w
+  out z
+  ALU u_alu
+  x --> u_alu
+  w --> u_alu
+  u_alu --> z
+`
+    );
+
+    expect(svg).toContain('<svg');
+    for (const label of ['x', 'w', 'z', 'u_alu']) {
+      expect(svg, `label ${label}`).toContain(`>${label}<`);
+    }
+  });
+
   describe('layout algorithm selection', () => {
     // schematicRenderer.ts always requests 'elk' first, falling back to dagre — this is the
     // exact registry mechanism it depends on. Pulling in the real @mermaid-js/layout-elk

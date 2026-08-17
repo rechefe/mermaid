@@ -26,7 +26,9 @@ describe('schematic parser', () => {
       { id: 'b', direction: 'in' },
       { id: 'y', direction: 'out' },
     ]);
-    expect(db.getInstances()).toEqual([{ id: 'g1', type: 'and', isPrimitive: true }]);
+    expect(db.getInstances()).toEqual([
+      { id: 'g1', type: 'and', isPrimitive: true, isModule: false },
+    ]);
   });
 
   it('auto-assigns gate inputs in source order and resolves the output', async () => {
@@ -88,7 +90,9 @@ describe('schematic parser', () => {
   a --> u_alu.a
 `);
 
-    expect(db.getInstances()).toEqual([{ id: 'u_alu', type: 'ALU', isPrimitive: false }]);
+    expect(db.getInstances()).toEqual([
+      { id: 'u_alu', type: 'ALU', isPrimitive: false, isModule: false },
+    ]);
     expect(db.getNets()).toEqual([{ source: { id: 'a' }, target: { id: 'u_alu', port: 'a' } }]);
   });
 

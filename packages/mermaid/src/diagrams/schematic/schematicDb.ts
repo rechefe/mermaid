@@ -10,9 +10,16 @@ import {
 import { getConfig as getGlobalConfig } from '../../diagram-api/diagramAPI.js';
 import type { Edge, LayoutData, Node } from '../../rendering-util/types.js';
 import { sanitizeText } from '../common/common.js';
-import { getAutoAssignedInput, getPrimitive } from './primitives.js';
+import { getAutoAssignedInput, getPrimitive, type PrimitiveSpec } from './primitives.js';
 import type {
+  ModuleDef,
+  ModulePort,
   PortDirection,
+  PortGroup,
+  PortKind,
+  PortSide,
+  RawModulePort,
+  RawPortGroup,
   SchematicDirection,
   SchematicEndpoint,
   SchematicInstance,
@@ -35,6 +42,8 @@ interface SchematicModel {
   direction: SchematicDirection;
   ports: Map<string, SchematicPort>;
   instances: Map<string, SchematicInstance>;
+  /** Module names are types, kept separate from the port/instance value namespace. */
+  modules: Map<string, ModuleDef>;
   nets: SchematicNet[];
   /** Inputs already taken on each instance, so a bare `--> g1` lands on the next free one. */
   assignedInputs: Map<string, number>;
@@ -44,6 +53,7 @@ const createModel = (): SchematicModel => ({
   direction: DEFAULT_DIRECTION,
   ports: new Map(),
   instances: new Map(),
+  modules: new Map(),
   nets: [],
   assignedInputs: new Map(),
 });
@@ -58,6 +68,42 @@ const assertNameIsFree = (id: string): void => {
     throw new Error(`Duplicate name '${id}': an instance with that name is already declared.`);
   }
 };
+
+const PORT_KINDS: readonly PortKind[] = ['clock', 'reset'];
+const PORT_SIDES: readonly PortSide[] = ['left', 'right', 'top', 'bottom'];
+
+const validatePortKind = (raw: string | undefined, context: string): PortKind | undefined => {
+  if (raw === undefined) {
+    return undefined;
+  }
+  if (!(PORT_KINDS as readonly string[]).includes(raw)) {
+    throw new Error(
+      `Unknown port kind '${raw}' on ${context}. Expected one of: ${PORT_KINDS.join(', ')}.`
+    );
+  }
+  return raw as PortKind;
+};
+
+const validatePortSide = (raw: string | undefined, context: string): PortSide | undefined => {
+  if (raw === undefined) {
+    return undefined;
+  }
+  if (!(PORT_SIDES as readonly string[]).includes(raw)) {
+    throw new Error(
+      `Unknown side '${raw}' on ${context}. Expected one of: ${PORT_SIDES.join(', ')}.`
+    );
+  }
+  return raw as PortSide;
+};
+
+/** Adapts a module's interface to the same shape primitives.ts uses, so `resolveEndpoint`'s
+ * auto-assign and dotted-port-ref validation work identically for both. Modules have fixed
+ * arity — `inout` ports count as both an input and an output, but there is no variadic case. */
+const moduleAsSpec = (def: ModuleDef): PrimitiveSpec => ({
+  inputs: def.ports.filter((port) => port.direction !== 'out').map((port) => port.id),
+  outputs: def.ports.filter((port) => port.direction !== 'in').map((port) => port.id),
+  variadicInputs: false,
+});
 
 /**
  * Resolves one end of a net to a concrete port.
@@ -88,7 +134,8 @@ const resolveEndpoint = (
     throw new Error(`Unknown name '${id}'. Declare it as a port or instantiate it first.`);
   }
 
-  const spec = getPrimitive(instance.type);
+  const moduleDef = model.modules.get(instance.type);
+  const spec = getPrimitive(instance.type) ?? (moduleDef ? moduleAsSpec(moduleDef) : undefined);
   if (!spec) {
     // An unknown type is a plain labelled box, so its ports cannot be checked or inferred.
     return port === undefined ? { id } : { id, port };
@@ -136,15 +183,61 @@ export const db = {
   },
   getDirection: (): SchematicDirection => model.direction,
 
-  addPort: (id: string, direction: PortDirection): void => {
+  addPort: (id: string, direction: PortDirection, rawKind?: string): void => {
     assertNameIsFree(id);
-    model.ports.set(id, { id, direction });
+    model.ports.set(id, { id, direction, kind: validatePortKind(rawKind, `port '${id}'`) });
   },
   getPorts: (): SchematicPort[] => [...model.ports.values()],
 
+  addModule: (name: string, rawPorts: RawModulePort[], rawGroups: RawPortGroup[]): void => {
+    if (getPrimitive(name)) {
+      throw new Error(`Module name '${name}' conflicts with the built-in primitive '${name}'.`);
+    }
+    if (model.modules.has(name)) {
+      throw new Error(`Duplicate module '${name}': a module with that name is already declared.`);
+    }
+
+    const seenPortNames = new Set<string>();
+    for (const port of rawPorts) {
+      if (seenPortNames.has(port.id)) {
+        throw new Error(`Duplicate port '${port.id}' in module '${name}'.`);
+      }
+      seenPortNames.add(port.id);
+    }
+
+    const seenGroupNames = new Set<string>();
+    for (const group of rawGroups) {
+      if (seenGroupNames.has(group.name)) {
+        throw new Error(`Duplicate group '${group.name}' in module '${name}'.`);
+      }
+      seenGroupNames.add(group.name);
+    }
+
+    const ports: ModulePort[] = rawPorts.map((port) => ({
+      id: port.id,
+      direction: port.direction,
+      kind: validatePortKind(port.kind, `port '${port.id}' in module '${name}'`),
+      side: validatePortSide(port.side, `port '${port.id}' in module '${name}'`),
+      ...(port.group ? { group: port.group } : {}),
+    }));
+    const groups: PortGroup[] = rawGroups.map((group) => ({
+      name: group.name,
+      side: validatePortSide(group.side, `group '${group.name}' in module '${name}'`),
+      ports: group.ports.map((port) => port.id),
+    }));
+
+    model.modules.set(name, { name, ports, groups });
+  },
+  getModules: (): ModuleDef[] => [...model.modules.values()],
+
   addInstance: (id: string, type: string): void => {
     assertNameIsFree(id);
-    model.instances.set(id, { id, type, isPrimitive: getPrimitive(type) !== undefined });
+    model.instances.set(id, {
+      id,
+      type,
+      isPrimitive: getPrimitive(type) !== undefined,
+      isModule: model.modules.has(type),
+    });
   },
   getInstances: (): SchematicInstance[] => [...model.instances.values()],
 
