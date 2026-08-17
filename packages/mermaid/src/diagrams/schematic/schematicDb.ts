@@ -268,6 +268,23 @@ export const db = {
     const PORT_MIN_HEIGHT = 32;
     const INSTANCE_MIN_WIDTH = 72;
     const INSTANCE_MIN_HEIGHT = 44;
+    // Without real per-port geometry, every wire touching an instance still needs its own
+    // pin-name label stacked along whichever side it lands on. A fixed height cramps that
+    // stacking as soon as an instance has more than a couple of connections — so the floor
+    // grows with however many wires converge on the instance's busiest side (its in-degree or
+    // out-degree, whichever is larger), rather than staying flat regardless of pin count.
+    const ROW_HEIGHT = 34;
+    const inDegree = new Map<string, number>();
+    const outDegree = new Map<string, number>();
+    for (const net of model.nets) {
+      outDegree.set(net.source.id, (outDegree.get(net.source.id) ?? 0) + 1);
+      inDegree.set(net.target.id, (inDegree.get(net.target.id) ?? 0) + 1);
+    }
+    const instanceHeight = (id: string): number =>
+      Math.max(
+        INSTANCE_MIN_HEIGHT,
+        Math.max(inDegree.get(id) ?? 0, outDegree.get(id) ?? 0) * ROW_HEIGHT
+      );
 
     const nodes: Node[] = [
       ...[...model.ports.values()].map(
@@ -295,7 +312,7 @@ export const db = {
           isGroup: false,
           padding: 8,
           width: INSTANCE_MIN_WIDTH,
-          height: INSTANCE_MIN_HEIGHT,
+          height: instanceHeight(instance.id),
           look,
           cssClasses: `default schematic-instance schematic-instance-${instance.type}`,
           cssStyles: [],
@@ -316,6 +333,12 @@ export const db = {
       // are already orthogonal and obstacle-aware, dagre's aren't.
       look,
       classes: 'schematic-net',
+      // A top-level port's own node already shows its name, so only an instance's *named pin*
+      // needs a label here — the same startLabelRight/endLabelLeft terminal-label mechanism
+      // class diagrams use for cardinality markers, positioned by the shared layout renderer
+      // right at each end of the wire regardless of which layout algorithm resolved.
+      ...(net.source.port ? { startLabelRight: sanitizeText(net.source.port, config) } : {}),
+      ...(net.target.port ? { endLabelLeft: sanitizeText(net.target.port, config) } : {}),
     }));
 
     return {

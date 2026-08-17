@@ -1939,11 +1939,16 @@ export interface SchematicDiagramConfig extends BaseDiagramConfig {
    */
   diagramPadding?: number;
   /**
-   * Spacing between blocks that sit side by side in the same rank.
+   * Spacing between blocks that sit side by side in the same rank. Wider than a typical
+   * flowchart's default — schematic nets carry a pin-name label at each end, and need the
+   * extra room to stay legible.
+   *
    */
   nodeSpacing?: number;
   /**
-   * Spacing between successive ranks of blocks along the signal direction.
+   * Spacing between successive ranks of blocks along the signal direction. Wider than a
+   * typical flowchart's default, for the same reason as nodeSpacing.
+   *
    */
   rankSpacing?: number;
 }

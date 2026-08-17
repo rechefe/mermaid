@@ -29,6 +29,15 @@ const getStyles: DiagramStylesProvider = (options) =>
     stroke-width: 1.5px;
     fill: none;
   }
+
+  /* Pin-name labels at each end of a net — a step down from the instance's own label, the way a
+   * schematic's pin names read smaller than its block names. */
+  .edgeTerminals .nodeLabel,
+  .edgeTerminals span {
+    font-size: 0.75em;
+    color: ${options.nodeTextColor || options.textColor};
+    opacity: 0.75;
+  }
 `;
 
 export default getStyles;

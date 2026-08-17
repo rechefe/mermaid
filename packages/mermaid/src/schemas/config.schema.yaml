@@ -2682,15 +2682,20 @@ $defs: # JSON Schema definition (maybe we should move these to a separate file)
         minimum: 0
         default: 8
       nodeSpacing:
-        description: Spacing between blocks that sit side by side in the same rank.
+        description: |
+          Spacing between blocks that sit side by side in the same rank. Wider than a typical
+          flowchart's default — schematic nets carry a pin-name label at each end, and need the
+          extra room to stay legible.
         type: number
         minimum: 0
-        default: 50
+        default: 70
       rankSpacing:
-        description: Spacing between successive ranks of blocks along the signal direction.
+        description: |
+          Spacing between successive ranks of blocks along the signal direction. Wider than a
+          typical flowchart's default, for the same reason as nodeSpacing.
         type: number
         minimum: 0
-        default: 60
+        default: 90
 
   UsecaseDiagramConfig:
     title: Usecase Diagram Config
